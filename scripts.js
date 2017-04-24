@@ -8,7 +8,7 @@
             return Sayings.instance;
         }
         Sayings.instance = this;
-        
+
         this.new = true;
 
         this.sayings_list = [];
@@ -24,6 +24,9 @@
         init: function(){
 
             console.log('Sayings started');
+
+            //service workeri käivitus
+            this.registerServiceWorker();
 
             // laeme vanasõnad failist
             this.getSayings();
@@ -69,9 +72,51 @@
             //leia random indeksiga vanasona
             var random_saying = this.sayings_list[parseInt(Math.random()*this.sayings_list.length)];
             document.querySelector("#content").innerHTML = random_saying;
+        },
+        registerServiceWorker: function(){
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('serviceWorker.js').then(function(registration) {
+                    // Registration was successful
+                    console.log('ServiceWorker registration successful: ', registration);
+
+                    Sayings.instance.registerNotifications(registration);
+                }, function(err) {
+                    // registration failed :(
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            }
+        },
+        registerNotifications: function(registration){
+            registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlB64ToUint8Array("BKFG-EYosOmmbOqvtaDMwfxlYnygB7RSzzZ4XsMESHS4kfFD4qqDFY-vBrIGAa6IEkYFEr5GtsWnsc2-g4l-M_o")
+            })
+            .then(function(subscription) {
+                console.log('User is subscribed.');
+                console.dir(JSON.stringify(subscription));
+            })
+            .catch(function(err) {
+                console.log('Failed to subscribe the user: ', err);
+            });
         }
-        
+
     }; // Sayings LÕPP
+
+    function urlB64ToUint8Array(base64String) {
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+        var rawData = window.atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+
+        for (var i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
 
     // kui leht laetud käivitan rakenduse
     window.onload = function(){
